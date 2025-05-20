@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Association Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .game-container {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            overflow: hidden;
+        }
+        
+        h1 {
+            color: #4a3f82;
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .instructions {
+            margin-bottom: 25px;
+            color: #666;
+            line-height: 1.5;
+            font-size: 1.1rem;
+            padding: 0 20px;
+        }
+        
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 10px 15px;
+            background-color: #f5f5f5;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .timer-container {
+            display: flex;
+            align-items: center;
+            color: #4a3f82;
+        }
+        
+        .timer-label {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        
+        .timer {
+            font-size: 1.8rem;
+            font-weight: bold;
+            min-width: 50px;
+            color: #4a3f82;
+        }
+        
+        .timer.warning {
+            color: #e65100;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #4a3f82;
+        }
+        
+        .word-pairs {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .word {
+            background: linear-gradient(145deg, #f5f5f5, #ffffff);
+            border-radius: 10px;
+            padding: 15px 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            user-select: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            font-weight: 600;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 60px;
+            position: relative;
+            overflow: hidden;
+            color: #4a3f82;
+        }
+        
+        .word:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .word:active {
+            transform: translateY(0);
+        }
+        
+        .word.selected {
+            background: linear-gradient(145deg, #5e72e4, #7795f8);
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 7px 14px rgba(93, 114, 228, 0.4);
+        }
+        
+        .word.correct {
+            background: linear-gradient(145deg, #48bb78, #38a169);
+            color: white;
+            box-shadow: 0 4px 6px rgba(56, 161, 105, 0.3);
+            transform: none;
+            cursor: default;
+        }
+        
+        .word.incorrect {
+            background: linear-gradient(145deg, #f56565, #e53e3e);
+            color: white;
+            animation: shake 0.5s;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        
+        button {
+            background: linear-gradient(145deg, #5e72e4, #7795f8);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(93, 114, 228, 0.3);
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 14px rgba(93, 114, 228, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 6px rgba(93, 114, 228, 0.2);
+        }
+        
+        .completion-message {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        
+        .completion-message.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .message-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+        
+        .completion-message.visible .message-content {
+            transform: scale(1);
+        }
+        
+        .message-title {
+            color: #4a3f82;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+        
+        .message-text {
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            animation: confetti-fall 3s linear forwards;
+            z-index: 999;
+        }
+        
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .game-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .word-pairs {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Word Association</h1>
+        
+        <div class="instructions">
+            Find pairs of related words by clicking on them. Match all pairs before time runs out!
+        </div>
+        
+        <div class="game-header">
+            <div class="timer-container">
+                <div class="timer-label">Time:</div>
+                <div class="timer" id="timer">60</div>
+            </div>
+            
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-label">Score</div>
+                    <div class="stat-value" id="score">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Pairs</div>
+                    <div class="stat-value"><span id="pairs">0</span>/<span id="totalPairs">0</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="word-pairs" id="wordPairs"></div>
+        
+        <button id="newGameBtn">New Game</button>
+    </div>
+    
+    <div class="completion-message" id="completionMessage">
+        <div class="message-content">
+            <h2 class="message-title" id="messageTitle">Congratulations!</h2>
+            <p class="message-text" id="messageText">You've matched all pairs!</p>
+            <button id="continueBtn">Play Again</button>
+        </div>
+    </div>
+    
+    <script>
+        const wordAssociations = [
+            ["Sky", "Blue"],
+            ["Fire", "Hot"],
+            ["Ice", "Cold"],
+            ["Night", "Dark"],
+            ["Sugar", "Sweet"],
+            ["Lemon", "Sour"],
+            ["Rain", "Wet"],
+            ["Sun", "Bright"],
+            ["Moon", "Night"],
+            ["Tree", "Green"],
+            ["Snow", "Winter"],
+            ["Beach", "Sand"],
+            ["Book", "Read"],
+            ["Music", "Listen"],
+            ["Food", "Eat"],
+            ["Water", "Drink"],
+            ["Car", "Drive"],
+            ["Bike", "Ride"],
+            ["Bird", "Fly"],
+            ["Fish", "Swim"],
+            ["Heart", "Love"],
+            ["Coffee", "Wake"],
+            ["Pillow", "Sleep"],
+            ["Flower", "Bloom"],
+            ["Candle", "Light"]
+        ];
+        
+        let gameState = {
+            pairs: [],
+            selectedWord: null,
+            score: 0,
+            matchedPairs: 0,
+            totalPairs: 0,
+            timeLeft: 60,
+            timerInterval: null,
+            gameActive: false
+        };
+        
+        // DOM elements
+        const wordPairsContainer = document.getElementById('wordPairs');
+        const scoreElement = document.getElementById('score');
+        const pairsElement = document.getElementById('pairs');
+        const totalPairsElement = document.getElementById('totalPairs');
+        const timerElement = document.getElementById('timer');
+        const newGameBtn = document.getElementById('newGameBtn');
+        const completionMessage = document.getElementById('completionMessage');
+        const messageTitle = document.getElementById('messageTitle');
+        const messageText = document.getElementById('messageText');
+        const continueBtn = document.getElementById('continueBtn');
+        
+        // Initialize the game
+        function initGame() {
+            clearInterval(gameState.timerInterval);
+            
+            // Reset game state
+            gameState = {
+                pairs: [],
+                selectedWord: null,
+                score: 0,
+                matchedPairs: 0,
+                totalPairs: 12, // Using 12 random pairs
+                timeLeft: 60,
+                timerInterval: null,
+                gameActive: true
+            };
+            
+            // Shuffle and pick pairs
+            const shuffledPairs = [...wordAssociations]
+                .sort(() => Math.random() - 0.5)
+                .slice(0, gameState.totalPairs);
+            
+            // Create flat array of words
+            let words = [];
+            shuffledPairs.forEach(pair => {
+                words.push({text: pair[0], match: pair[1]});
+                words.push({text: pair[1], match: pair[0]});
+                gameState.pairs.push({word1: pair[0], word2: pair[1], matched: false});
+            });
+            
+            // Shuffle words
+            words = words.sort(() => Math.random() - 0.5);
+            
+            // Hide completion message
+            completionMessage.classList.remove('visible');
+            
+            // Reset timer styling
+            timerElement.classList.remove('warning');
+            
+            // Update UI
+            updateStats();
+            renderWords(words);
+            startTimer();
+        }
+        
+        // Render words in the container
+        function renderWords(words) {
+            wordPairsContainer.innerHTML = '';
+            
+            words.forEach((word, index) => {
+                const wordElement = document.createElement('div');
+                wordElement.className = 'word';
+                wordElement.textContent = word.text;
+                wordElement.dataset.index = index;
+                wordElement.dataset.text = word.text;
+                wordElement.dataset.match = word.match;
+                
+                wordElement.addEventListener('click', () => handleWordClick(wordElement));
+                
+                wordPairsContainer.appendChild(wordElement);
+            });
+        }
+        
+        // Handle word selection
+        function handleWordClick(wordElement) {
+            if (!gameState.gameActive) return;
+            
+            // If already matched or same element clicked, do nothing
+            if (wordElement.classList.contains('correct') || 
+                (gameState.selectedWord && gameState.selectedWord === wordElement)) {
+                return;
+            }
+            
+            // If no word is selected yet
+            if (!gameState.selectedWord) {
+                wordElement.classList.add('selected');
+                gameState.selectedWord = wordElement;
+                return;
+            }
+            
+            // If this is the second selection, check for match
+            const firstWord = gameState.selectedWord.dataset.text;
+            const firstMatch = gameState.selectedWord.dataset.match;
+            const secondWord = wordElement.dataset.text;
+            
+            if (firstMatch === secondWord) {
+                // Match found!
+                gameState.selectedWord.classList.remove('selected');
+                gameState.selectedWord.classList.add('correct');
+                wordElement.classList.add('correct');
+                
+                // Update pairs in game state
+                gameState.pairs.forEach(pair => {
+                    if ((pair.word1 === firstWord && pair.word2 === secondWord) ||
+                        (pair.word2 === firstWord && pair.word1 === secondWord)) {
+                        pair.matched = true;
+                    }
+                });
+                
+                gameState.matchedPairs++;
+                gameState.score += 10;
+                
+                // Check if all pairs are matched
+                if (gameState.matchedPairs === gameState.totalPairs) {
+                    endGame(true);
+                }
+            } else {
+                // No match
+                gameState.selectedWord.classList.remove('selected');
+                gameState.selectedWord.classList.add('incorrect');
+                wordElement.classList.add('incorrect');
+                
+                gameState.score = Math.max(0, gameState.score - 2);
+                
+                // Remove incorrect styling after a delay
+                setTimeout(() => {
+                    gameState.selectedWord.classList.remove('incorrect');
+                    wordElement.classList.remove('incorrect');
+                }, 800);
+            }
+            
+            updateStats();
+            
+            // Reset selection
+            gameState.selectedWord = null;
+        }
+        
+        // Start timer
+        function startTimer() {
+            gameState.timerInterval = setInterval(() => {
+                gameState.timeLeft--;
+                timerElement.textContent = gameState.timeLeft;
+                
+                // Add warning class when time is running low
+                if (gameState.timeLeft <= 10) {
+                    timerElement.classList.add('warning');
+                }
+                
+                if (gameState.timeLeft <= 0) {
+                    endGame(false);
+                }
+            }, 1000);
+        }
+        
+        // Create confetti effect
+        function createConfetti() {
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+            
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.width = Math.random() * 10 + 5 + 'px';
+                confetti.style.height = Math.random() * 10 + 5 + 'px';
+                confetti.style.animationDuration = Math.random() * 2 + 2 + 's';
+                document.body.appendChild(confetti);
+                
+                // Remove confetti after animation
+                setTimeout(() => {
+                    confetti.remove();
+                }, 4000);
+            }
+        }
+        
+        // End game
+        function endGame(isWin) {
+            clearInterval(gameState.timerInterval);
+            gameState.gameActive = false;
+            
+            if (isWin) {
+                // Apply bonus for remaining time
+                const timeBonus = gameState.timeLeft * 2;
+                gameState.score += timeBonus;
+                updateStats();
+                
+                // Show win message
+                messageTitle.textContent = 'Congratulations!';
+                messageText.textContent = `You matched all pairs!\nFinal Score: ${gameState.score}\nTime Bonus: +${timeBonus}`;
+                
+                // Create confetti effect
+                createConfetti();
+            } else {
+                // Show lose message
+                messageTitle.textContent = 'Time\'s Up!';
+                messageText.textContent = `You matched ${gameState.matchedPairs} out of ${gameState.totalPairs} pairs.\nFinal Score: ${gameState.score}`;
+            }
+            
+            // Show the completion message
+            setTimeout(() => {
+                completionMessage.classList.add('visible');
+            }, 500);
+        }
+        
+        // Update statistics display
+        function updateStats() {
+            scoreElement.textContent = gameState.score;
+            pairsElement.textContent = gameState.matchedPairs;
+            totalPairsElement.textContent = gameState.totalPairs;
+        }
+        
+        // Event listeners
+        newGameBtn.addEventListener('click', initGame);
+        continueBtn.addEventListener('click', initGame);
+        
+        // Start the game when page loads
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>
